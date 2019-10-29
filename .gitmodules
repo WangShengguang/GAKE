@@ -1,0 +1,3 @@
+[submodule "data/Annotated-Semantic-Relationships-Datasets"]
+	path = data/Annotated-Semantic-Relationships-Datasets
+	url = https://github.com/davidsbatista/Annotated-Semantic-Relationships-Datasets.git
