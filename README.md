@@ -2,17 +2,17 @@
 
 ## Instractions
 
-Get raw data:
-
-```sh
-./data_downloader.sh
-```
-
-Get trainable data
-
-```sh
-./data_preprocessing.sh
-```
+> Get raw data:
+>
+> ```sh
+> ./data_downloader.sh
+> ```
+>
+> Get trainable data
+>
+> ```sh
+> ./data_preprocessing.sh
+> ```
 
 ## Dataset
 

@@ -1,0 +1,12 @@
+data/FB15K-237/valid.csv filter=lfs diff=lfs merge=lfs -text
+data/FB15K-237/word2id.json filter=lfs diff=lfs merge=lfs -text
+data/FB15K-237/entity2id.json filter=lfs diff=lfs merge=lfs -text
+data/FB15K-237/relation2id.json filter=lfs diff=lfs merge=lfs -text
+data/FB15K-237/test.csv filter=lfs diff=lfs merge=lfs -text
+data/FB15K-237/train.csv filter=lfs diff=lfs merge=lfs -text
+data/WN18RR/train.csv filter=lfs diff=lfs merge=lfs -text
+data/WN18RR/valid.csv filter=lfs diff=lfs merge=lfs -text
+data/WN18RR/word2id.json filter=lfs diff=lfs merge=lfs -text
+data/WN18RR/entity2id.json filter=lfs diff=lfs merge=lfs -text
+data/WN18RR/relation2id.json filter=lfs diff=lfs merge=lfs -text
+data/WN18RR/test.csv filter=lfs diff=lfs merge=lfs -text
