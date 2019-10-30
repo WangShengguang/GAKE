@@ -1,8 +1,9 @@
 import pandas as pd
 import os
 from tqdm import tqdm
-
 import json
+
+from dataset.common import get_id_table_from_set, sentence_to_words
 
 DATA_PATH = 'data/FB15K-237'
 
@@ -34,26 +35,42 @@ def generate_sentence_func(df):
 
 
 def prepare_FB15K_237(path='data/datasets_knowledge_embedding/FB15k-237', verbose=True):
+    entitiy_set = set()
+    relation_set = set()
+    word_set = set()
 
     for txt in ['train', 'test', 'valid']:
         if verbose:
             print('Processing', txt)
         filepath = os.path.join(path, txt + '.txt')
-        ori_df = pd.read_csv(filepath, delimiter='\t', names=[
-                             'head', 'relation', 'tail'])
+        df = pd.read_csv(filepath, delimiter='\t', names=[
+            'head', 'relation', 'tail'])
 
         if verbose:
             tqdm.pandas()
-            ori_df['sentence'] = ori_df.progress_apply(
+            df['sentence'] = df.progress_apply(
                 generate_sentence_func, axis=1)
         else:
-            ori_df['sentence'] = ori_df.apply(generate_sentence_func, axis=1)
+            df['sentence'] = df.apply(generate_sentence_func, axis=1)
 
         # drop the data which can't construct sentence
-        ori_df = ori_df.dropna()
+        df = df.dropna()
 
-        ori_df.to_csv(os.path.join(DATA_PATH, txt + '.csv'),
-                      sep=',', index=False)
+        entitiy_set.update(df['head'].to_list() + df['tail'].to_list())
+        relation_set.update(df['relation'].to_list())
+        word_set.update([word for sent_list in df['sentence'].apply(
+            sentence_to_words).to_list() for word in sent_list])
+
+        df.to_csv(os.path.join(DATA_PATH, txt + '.csv'),
+                  sep=',', index=False)
+
+    print('Generating id tables')
+    get_id_table_from_set(entitiy_set, f'{DATA_PATH}/entity2id.json')
+    get_id_table_from_set(relation_set, f'{DATA_PATH}/relation2id.json')
+    word_set.discard('[CLS]')
+    word_set.discard('[SEP]')
+    get_id_table_from_set(word_set, f'{DATA_PATH}/word2id.json',
+                          '[PAD]', ['[CLS]', '[SEP]', '[UNK]', '[MASK]'])
 
 
 if __name__ == "__main__":
