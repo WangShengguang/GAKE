@@ -1,5 +1,6 @@
 numpy
-pandas
+pandas>=4.23.4
+tqdm>=0.25.1
 nltk
 torch
 torchvision
