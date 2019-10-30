@@ -8,6 +8,12 @@ Get raw data:
 ./data_downloader.sh
 ```
 
+Get trainable data
+
+```sh
+./data_preprocessing.sh
+```
+
 ## Dataset
 
 * Knowledge Graph with Entity Description
