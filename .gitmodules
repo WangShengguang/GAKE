@@ -1,3 +1,6 @@
 [submodule "data/Annotated-Semantic-Relationships-Datasets"]
 	path = data/Annotated-Semantic-Relationships-Datasets
 	url = https://github.com/davidsbatista/Annotated-Semantic-Relationships-Datasets.git
+[submodule "data/datasets_knowledge_embedding"]
+	path = data/datasets_knowledge_embedding
+	url = https://github.com/villmow/datasets_knowledge_embedding.git
