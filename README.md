@@ -30,15 +30,21 @@ Get raw data:
 * [Papers With Code : Link Prediction](https://paperswithcode.com/task/link-prediction)
 * [Relation Prediction | NLP-progress](http://nlpprogress.com/english/relation_prediction.html)
 
-#### Freebase 2015
+> `head\trelation\ttail\t[cls] head_description [sep] relation_text [sep] tail_description [sep]\n`
+
+#### Freebase
+
+`data/FB15K-237/*.tsv`
 
 * [State-of-the-art table for Link Prediction on FB15k](https://paperswithcode.com/sota/link-prediction-on-fb15k)
 * [State-of-the-art table for Link Prediction on FB15k-237](https://paperswithcode.com/sota/link-prediction-on-fb15k-237)
 
-#### WordNet 2018
+#### WordNet
+
+`data/WN18RR/*.tsv`
 
 * [State-of-the-art table for Link Prediction on WN18](https://paperswithcode.com/sota/link-prediction-on-wn18)
-[State-of-the-art table for Link Prediction on WN18RR](https://paperswithcode.com/sota/link-prediction-on-wn18rr)
+* [State-of-the-art table for Link Prediction on WN18RR](https://paperswithcode.com/sota/link-prediction-on-wn18rr)
 
 ---
 
