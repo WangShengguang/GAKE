@@ -10,10 +10,11 @@ Get raw data:
 
 ## Dataset
 
+* Knowledge Graph with Entity Description
+  * [xrb92/DKRL: Representation Learning of Knowledge Graphs with Entity Descriptions (AAAI'16)](https://github.com/xrb92/DKRL) - FB15k with description, FB20k-new
+  * [villmow/datasets_knowledge_embedding: Datasets for Knowledge Graph Completion with textual information about the entities](https://github.com/villmow/datasets_knowledge_embedding) - FB15K, FB15k-237, WN18, WN18RR
 * Knowledge Graph
   * [AGENDA Dataset](https://github.com/rikdz/GraphWriter#agenda-dataset)
-* Knowledge Graph with Entity Description
-  * [xrb92/DKRL: Representation Learning of Knowledge Graphs with Entity Descriptions (AAAI'16)](https://github.com/xrb92/DKRL)
 * Relation Extraction/Classification
   * [davidsbatista/Annotated-Semantic-Relationships-Datasets](https://github.com/davidsbatista/Annotated-Semantic-Relationships-Datasets)
     * SemEval 2007 Task 4
@@ -21,6 +22,25 @@ Get raw data:
     * ReRelEM
     * BioNLP Shared Task
     * DBpediaRelations-PT
+
+### Knowledge Graph with Entity Description
+
+> [想问一下WN18 和 WN18RR是什么关系 · Issue #76 · thunlp/OpenKE](https://github.com/thunlp/OpenKE/issues/76)
+
+* [Papers With Code : Link Prediction](https://paperswithcode.com/task/link-prediction)
+* [Relation Prediction | NLP-progress](http://nlpprogress.com/english/relation_prediction.html)
+
+#### Freebase 2015
+
+* [State-of-the-art table for Link Prediction on FB15k](https://paperswithcode.com/sota/link-prediction-on-fb15k)
+* [State-of-the-art table for Link Prediction on FB15k-237](https://paperswithcode.com/sota/link-prediction-on-fb15k-237)
+
+#### WordNet 2018
+
+* [State-of-the-art table for Link Prediction on WN18](https://paperswithcode.com/sota/link-prediction-on-wn18)
+[State-of-the-art table for Link Prediction on WN18RR](https://paperswithcode.com/sota/link-prediction-on-wn18rr)
+
+---
 
 ### Knowledge Graph
 
@@ -31,12 +51,6 @@ Get raw data:
 * Train: 38720
 * Valid: 1000
 * Test: 1000
-
-### Knowledge Graph with Entity Description
-
-#### Freebase 2015
-
-#### WordNet 2018
 
 ### Relation Extraction/Classification
 
