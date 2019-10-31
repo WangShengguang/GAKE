@@ -1,11 +1,24 @@
-# Graph Self-Attention Knowledge Embedding
+# Graph Context Attention Knowledge Embedding
 
 ## Instractions
+
+Install requirements
+
+```sh
+pip3 install -r requirements.txt
+```
 
 Get data
 
 ```sh
 git lfs pull
+```
+
+Run
+
+```sh
+python3 manage.py --model [GCAKE] --dataset [FB15K-237, WN18RR]
+./train_all_dataset.sh [GCAKE]
 ```
 
 > Get raw data:
