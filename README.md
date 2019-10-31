@@ -2,6 +2,12 @@
 
 ## Instractions
 
+Get data
+
+```sh
+git lfs pull
+```
+
 > Get raw data:
 >
 > ```sh
@@ -107,3 +113,8 @@
 `grep -o 'SENTENCE' data/DBpediaRelations-PT/DBpediaRelations-PT-0.2.txt | wc -l`
 
 * Total: 98023
+
+## Coding Stytle
+
+* [styleguide | Style guides for Google-originated open-source projects](https://google.github.io/styleguide/pyguide.html)
+* [google/seq2seq pylintrc](https://github.com/google/seq2seq/blob/master/pylintrc)
