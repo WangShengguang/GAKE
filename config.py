@@ -42,3 +42,16 @@ class Config(TorchConfig):
     #
     max_len = 502
     batch_size = 16
+
+    subtask = 'general'
+    test_batch_size = 128
+    lr = 0.0001
+
+
+class DevConfig(object):
+    """ only used for development purpose """
+    subtask = 'dev'
+    seed = 87
+    batch_size = 64
+    test_batch_size = 128
+    lr = 0.0001

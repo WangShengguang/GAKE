@@ -6,3 +6,5 @@ torch
 torchvision
 keras
 ipdb
+tensorboardX
+setproctitle
