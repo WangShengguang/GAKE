@@ -1,12 +1,9 @@
-import argparse
-
-
 def gake():
     dataset = "WN18RR"
     model_name = "GAKE"
     mode = "train"
-    from gcake.models.gake.gake import Trainer
-    Trainer(dataset).run(mode)
+    from gcake.trainer import GraphTrainer
+    GraphTrainer(dataset, model_name).run(mode)
 
 
 def main():

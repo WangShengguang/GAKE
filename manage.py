@@ -1,9 +1,9 @@
 # Manager for KGE
 import argparse
+import logging
+
 from config import Config
 from utils import common
-import time
-import logging
 
 
 def parse_argument():
@@ -26,11 +26,11 @@ def set_names(args):
     ''' set names for log, process and checkpoint '''
     # get log filename and process name
     args.log_process_name = '{}_{}_{}'.format(
-        args.mode, args.model, args.dataset
+        args.datasetargs.model, args.mode,
     )
     # get checkpoint name
     args.ckpt_name = '{}_{}'.format(
-        args.model, args.dataset
+        args.dataset, args.model
     )
 
 
@@ -42,7 +42,7 @@ def print_settings(args, configs):
     logging.info(f'\tUsing Model:')
     logging.info(f'\t KGE: {args.model}')
     logging.info(f'\tParameters:')
-    logging.info(f'\t Learning Rate\t: {configs.lr}') # if use Adam then remove
+    logging.info(f'\t Learning Rate\t: {configs.lr}')  # if use Adam then remove
     logging.info(f'\t Train Batch\t: {configs.batch_size}')
     logging.info(f'\t Test Batch\t: {configs.test_batch_size}')
     logging.info(f'Path:')

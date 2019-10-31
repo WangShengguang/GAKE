@@ -22,9 +22,9 @@ class GCAKE(nn.Module):
         self.graph_encoder = graph_encoder
 
         self.classifier = nn.Sequential([
-            nn.Linear(in_features=2048, out_features=1024)
-            nn.ReLU()
-            nn.Linear(in_features=1024, out_features=1)
+            nn.Linear(in_features=2048, out_features=1024),
+            nn.ReLU(),
+            nn.Linear(in_features=1024, out_features=1),
             nn.Sigmoid()
         ])
 
@@ -48,7 +48,7 @@ class GCAKE(nn.Module):
         sent_embedding = self.sent_encoder(sent)
         triple_sent_embedding = self.first_triple_encoder(
             triple_embedding, sent_embedding)
-        graph_embedding = self.graph_encoder(graph) # graph structure is prepared in data helper
+        graph_embedding = self.graph_encoder(graph)  # graph structure is prepared in data helper
         triple_sent_graph_embedding = self.first_triple_encoder(
             triple_sent_embedding, graph_embedding)
 

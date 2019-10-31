@@ -11,10 +11,6 @@ data_dir = os.path.join(root_dir, "data")
 output_dir = os.path.join(root_dir, "output")
 ckpt_dir = os.path.join(output_dir, "ckpt")
 
-rand_seed = 1234
-random.seed(rand_seed)
-np.random.seed(rand_seed)
-torch.manual_seed(rand_seed)  # cpu
 
 
 # torch.cuda.manual_seed(rand_seed) #gpu
@@ -32,6 +28,7 @@ class TorchConfig(object):
 
 class Config(TorchConfig):
     load_pretrain = True
+    rand_seed = 1234
     load_model_mode = "max_step"  # max_mrr,min_loss,max_step
     #
     learning_rate = 0.001
@@ -48,10 +45,8 @@ class Config(TorchConfig):
     lr = 0.0001
 
 
-class DevConfig(object):
+class DevConfig(Config):
     """ only used for development purpose """
     subtask = 'dev'
-    seed = 87
     batch_size = 64
     test_batch_size = 128
-    lr = 0.0001

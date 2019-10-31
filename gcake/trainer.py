@@ -10,6 +10,7 @@ from tqdm import trange
 from config import Config, ckpt_dir
 from gcake.data_helper import DataHelper
 from gcake.evaluator import Evaluator
+from gcake.models.modules import Graph
 
 
 class Saver(object):
@@ -63,8 +64,9 @@ class BaseTrainer(object):
         return loss
 
 
-class Trainer(object):
+class Trainer(BaseTrainer):
     def __init__(self, dataset, model_name, min_num_epoch=Config.min_epoch_nums):
+        super().__init__()
         self.model_name = model_name
         self.dataset = dataset
         self.min_num_epoch = min_num_epoch
@@ -83,6 +85,7 @@ class Trainer(object):
         relation_num = len(self.data_helper.relation2id)
         Model = {"GAKE": GAKE}[self.model_name]
         model = Model(entity_num, relation_num, dim=128)
+        self.init_model(model)
         return model
 
     def check_loss_save(self, model, global_step, loss):
@@ -108,7 +111,7 @@ class Trainer(object):
             self.patience_counter += 1
         return mr, mrr, hit_10, hit_3, hit_1
 
-    def run(self):
+    def run(self, mode):
         logging.info("{} {} start train ...".format(self.model_name, self.dataset))
         model = self.get_model()
         if Config.load_pretrain:  # 断点续训
@@ -154,3 +157,31 @@ class Trainer(object):
                 logging.info("{} {}, Best val f1: {:.3f} best loss:{:.3f}".format(
                     self.dataset, self.model_name, self.best_val_mrr, self.min_loss))
                 break
+
+
+class GraphTrainer(Trainer):
+    def __init__(self, dataset, model_name, min_num_epoch=Config.min_epoch_nums):
+        super().__init__(dataset, model_name, min_num_epoch)
+        self.dataset = dataset
+
+    def run(self, mode):
+        model = self.get_model()
+        triples, sentences = self.data_helper.get_all_datas()
+        graph = Graph(triples=triples)
+
+        for i, entity_id in enumerate(graph.entities):
+            # data
+            _neighbor_ids = graph.get_neighbor_context(entity_id)
+            _path_ids = graph.get_path_context(entity_id)
+            _edge_ids = graph.get_edge_context(entity_id)
+            #
+            entity_id = torch.tensor([entity_id], dtype=torch.long).to(Config.device)
+            neighbor_ids = torch.tensor(_neighbor_ids, dtype=torch.long).to(Config.device)
+            path_ids = torch.tensor(_path_ids, dtype=torch.long).to(Config.device)
+            edge_ids = torch.tensor(_edge_ids, dtype=torch.long).to(Config.device)
+
+            global_weight_p, loss = model(entity_id, neighbor_ids, path_ids, edge_ids)
+            self.backfoward(loss, model)
+            # import ipdb
+            # ipdb.set_trace()
+            print(f"* i:{i},\tentity:{entity_id.item()},\tloss:{loss.item():.4f}")

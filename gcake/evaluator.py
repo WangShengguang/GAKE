@@ -2,7 +2,6 @@ import logging
 from typing import List
 
 import numpy as np
-import tensorflow as tf
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from tqdm import tqdm
 
@@ -237,12 +236,10 @@ class Evaluator(Predictor):
         """
         链接预测，预测头实体或尾实体
         """
-        metrics_li = []
-        total = len(self.data_helper.data[data_type])
+        triples, sentences = self.data_helper.get_data(data_type)
         logging.info("* model:{},{} test_link_prediction start, {}: {} ".format(
-            self.model_name, self.dataset, data_type, total))
-        triples_li = self.data_helper.data[data_type]
-        metrics = self.evaluate_metrics(triples_li, _tqdm=_tqdm)
+            self.model_name, self.dataset, data_type, len(triples)))
+        metrics = self.evaluate_metrics(triples, _tqdm=_tqdm)
         mr, mrr = metrics["ave"]["MR"], metrics["ave"]["MRR"]
         hit_10, hit_3, hit_1 = metrics["ave"]["Hit@10"], metrics["ave"]["Hit@3"], metrics["ave"]["Hit@1"]
         # logging.info("mr:{:.3f}, mrr:{:.3f}, hit_1:{:.3f}, hit_3:{:.3f}, hit_10:{:.3f}".format(
