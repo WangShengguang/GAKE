@@ -1,7 +1,5 @@
 import os
-import random
 
-import numpy as np
 import torch
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
@@ -10,7 +8,6 @@ data_dir = os.path.join(root_dir, "data")
 
 output_dir = os.path.join(root_dir, "output")
 ckpt_dir = os.path.join(output_dir, "ckpt")
-
 
 
 # torch.cuda.manual_seed(rand_seed) #gpu
@@ -37,7 +34,8 @@ class Config(TorchConfig):
     max_epoch_nums = 10
     patience_num = 3
     #
-    max_len = 502
+    embedding_dim = 128  # entity enbedding dim, relation enbedding dim , word enbedding dim
+    max_len = 50
     batch_size = 16
 
     subtask = 'general'

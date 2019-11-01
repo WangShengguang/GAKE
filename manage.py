@@ -6,27 +6,11 @@ from config import Config
 from utils import common
 
 
-def parse_argument():
-    parser = argparse.ArgumentParser(
-        description='GCAKE Manager')
-    parser.add_argument('--dataset', type=str, default='FB15K-237',
-                        choices=['FB15K-237', 'WN18RR'],
-                        help='Dataset')
-    parser.add_argument('--mode', type=str, default='train',
-                        choices=['train', 'test'],
-                        help='Mode to use')
-    parser.add_argument('--model', type=str, default='GCAKE',
-                        choices=['GCAKE'],
-                        help='Model for KGE')
-    common.add_base_args(parser)
-    return parser.parse_args()
-
-
 def set_names(args):
     ''' set names for log, process and checkpoint '''
     # get log filename and process name
     args.log_process_name = '{}_{}_{}'.format(
-        args.datasetargs.model, args.mode,
+        args.dataset, args.model, args.mode,
     )
     # get checkpoint name
     args.ckpt_name = '{}_{}'.format(
@@ -50,6 +34,27 @@ def print_settings(args, configs):
     logging.info(f'\tckpt: {args.ckpt_dir}')
 
 
+def parse_argument():
+    parser = argparse.ArgumentParser(
+        description='GCAKE Manager')
+    parser.add_argument('--dataset', type=str, default='FB15K-237',
+                        choices=['FB15K-237', 'WN18RR'],
+                        help='Dataset')
+    parser.add_argument('--mode', type=str, default='train',
+                        choices=['train', 'test'],
+                        help='Mode to use')
+    parser.add_argument('--model', type=str, default='GCAKE',
+                        choices=['GCAKE'],
+                        help='Model for KGE')
+    common.add_base_args(parser)
+    return parser.parse_args()
+
+
+def run(args):
+    from gcake.trainer import Trainer
+    Trainer(dataset=args.dataset, model_name=args.model, min_num_epoch=3).run(args.mode)
+
+
 def main():
     # get args and configs
     args = parse_argument()
@@ -62,6 +67,8 @@ def main():
     common.set_process_name(args)
     use_cuda = common.check_gpu(args)
     print_settings(args, configs)
+
+    run(args)
 
     # If use cuda and have multiple GPU, then warp model with nn.DataParallel
     # the following code is going to be put in Trainer?!

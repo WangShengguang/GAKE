@@ -1,8 +1,10 @@
 import json
 import os
+import random
 
 import numpy as np
 import pandas as pd
+import torch
 from keras.preprocessing import sequence
 
 from config import data_dir, Config
@@ -20,6 +22,8 @@ class DataHelper(object):
             self.entity2id = json.load(f)
         with open(os.path.join(data_dir, self.dataset, "relation2id.json"), "r", encoding="utf-8") as f:
             self.relation2id = json.load(f)
+        with open(os.path.join(data_dir, self.dataset, "word2id.json"), "r", encoding="utf-8") as f:
+            self.word2id = json.load(f)
 
     def get_data(self, data_type):
         data_frame = pd.read_csv(os.path.join(data_dir, self.dataset, f"{data_type}.csv"))
@@ -28,11 +32,8 @@ class DataHelper(object):
         heads = [self.entity2id[entity] for entity in head]
         relations = [self.relation2id[rel] for rel in relation]
         tails = [self.entity2id[entity] for entity in tail]
-        with open(os.path.join(data_dir, self.dataset, "word2id.json"), "r", encoding="utf-8") as f:
-            word2id = json.load(f)
         hrts = [(h, r, t) for h, r, t in zip(heads, relations, tails)]
-        sentences = [[word2id.get(token, 0) for token in sentence_to_words(s)] for s in sentence]
-        sentences = sequence.pad_sequences(sentences, maxlen=Config.max_len, padding="post", value=word2id["[PAD]"])
+        sentences = [[self.word2id.get(token, 0) for token in sentence_to_words(s)] for s in sentence]
         assert len(hrts) == len(sentences)
         return hrts, sentences
 
@@ -54,15 +55,15 @@ class DataHelper(object):
 
         batch_negative_triples = []
         batch_negative_sentences = []
-        for (h, t, r) in batch_positive_samples:
-            while (h, t, r) in self.pos_triples_set:
-                e = np.random.choice(self.entity_ids)
-                if np.random.choice(0, 1):
+        for (h, r, t) in batch_positive_samples:
+            while (h, r, t) in self.pos_triples_set:
+                e = random.choice(self.entity_ids)
+                if random.randint(0, 1):
                     h = e
                 else:
                     t = e
-            batch_negative_triples.append((h, t, r))
-            batch_negative_sentences.append(np.random.choice(self.all_sentences))
+            batch_negative_triples.append((h, r, t))
+            batch_negative_sentences.append(random.sample(self.all_sentences, 1)[0])
         assert len(batch_positive_samples) == len(batch_negative_triples) == len(batch_negative_sentences)
         return batch_negative_triples, batch_negative_sentences
 
@@ -83,5 +84,14 @@ class DataHelper(object):
             _negative_triples, _negative_sentences = self.get_batch_negative_samples(_positive_triples)
             triples = _positive_triples + _negative_triples
             sentences = _positive_sentences + _negative_sentences
+            sentences = sequence.pad_sequences(sentences,
+                                               # maxlen=min(Config.max_len, max([len(s) for s in sentences])),
+                                               maxlen=Config.max_len,
+                                               padding="post", value=self.word2id["[PAD]"])
             y_batch = [[1.0]] * semi_batch_size + [[-1.0]] * semi_batch_size
-            yield np.asarray(triples), np.asarray(sentences), np.asarray(y_batch)
+            #
+            triples = torch.tensor(triples, dtype=torch.long).to(Config.device)
+            sentences = torch.tensor(sentences, dtype=torch.long).to(Config.device)
+            y_labels = torch.tensor(y_batch, dtype=torch.float32).to(Config.device)
+            yield triples, sentences, y_labels
+            # yield np.asarray(triples), np.asarray(sentences), np.asarray(y_batch)

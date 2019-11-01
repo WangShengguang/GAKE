@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from config import TorchConfig as Config
 
 
 class GAKE(nn.Module):
@@ -7,13 +8,18 @@ class GAKE(nn.Module):
     https://www.aclweb.org/anthology/C16-1062.pdf
     """
 
-    def __init__(self, entity_num, relation_num, dim=128):
+    def __init__(self, entity_num, relation_num, dim=128, ent_embeddings: nn.Embedding = None):
         super().__init__()
         self.entity_num = entity_num
-        self.embeddings = nn.Embedding(entity_num + relation_num, dim)
+        if ent_embeddings is None:
+            ent_embeddings = nn.Embedding(entity_num + relation_num, dim)
+        self.embeddings = ent_embeddings
         self.linear = nn.Linear(3, 1)
 
     def get_p(self, si_id, si_context_ids):
+        if len(si_context_ids) == 0:
+            return torch.zeros([1, 1]).to(Config.device)
+
         si_context_emb = self.embeddings(si_context_ids)
         context_pie = torch.sum(si_context_emb, dim=0) / torch.norm(si_context_emb, p=2)  # (n,dim)
 

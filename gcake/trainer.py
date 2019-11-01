@@ -80,11 +80,19 @@ class Trainer(BaseTrainer):
         self.patience_counter = 0
 
     def get_model(self):
-        from gcake.models.gake.gake import GAKE
-        entity_num = len(self.data_helper.entity2id)
-        relation_num = len(self.data_helper.relation2id)
-        Model = {"GAKE": GAKE}[self.model_name]
-        model = Model(entity_num, relation_num, dim=128)
+        from gcake.models.gake import GAKE
+        from gcake.model.GCAKE import GCAKE
+        num_entity = len(self.data_helper.entity2id)  # TODO  len() != max()
+        num_relation = len(self.data_helper.relation2id)
+        embedding_dim = Config.embedding_dim
+        if self.model_name == "GCAKE":
+            triples, sentences = self.data_helper.get_data("train")
+            model = GCAKE(num_entity, num_relation,
+                          total_word=len(self.data_helper.word2id),
+                          dim=embedding_dim, triples=triples)
+        else:
+            Model = {"GAKE": GAKE}[self.model_name]
+            model = Model(num_entity, num_relation, dim=embedding_dim)
         self.init_model(model)
         return model
 
@@ -114,12 +122,12 @@ class Trainer(BaseTrainer):
     def run(self, mode):
         logging.info("{} {} start train ...".format(self.model_name, self.dataset))
         model = self.get_model()
-        if Config.load_pretrain:  # 断点续训
+        if Config.load_pretrain and False:  # 断点续训
             model_path, global_step = self.saver.load_model(model, mode=Config.load_model_mode)
             print("* Model load from file: {}".format(model_path))
         else:
             global_step = 0
-        per_epoch_step = len(self.data_helper.get_data("train")) // Config.batch_size // 2  # 正负样本
+        per_epoch_step = len(self.data_helper.get_data("train")[0]) // Config.batch_size // 2  # 正负样本
         start_epoch_num = global_step // per_epoch_step  # 已经训练过多少epoch
         print("start_epoch_num: {}".format(start_epoch_num))
         for epoch_num in trange(1, min(self.min_num_epoch, Config.max_epoch_nums) + 1,
@@ -127,9 +135,10 @@ class Trainer(BaseTrainer):
             if epoch_num <= start_epoch_num:
                 continue
             losses = []
-            for triples, sentences, y_batch in self.data_helper.batch_iter(data_type="train",
-                                                                           batch_size=Config.batch_size, _shuffle=True):
-                p, loss = model()
+            for triples, sentences, y_labels in self.data_helper.batch_iter(data_type="train",
+                                                                            batch_size=Config.batch_size,
+                                                                            _shuffle=True):
+                loss = model(triples, sentences, y_labels)
                 # if global_step % Config.check_step == 0: # train step metrics
                 #     self.evaluator.set_model(sess, model)
                 #     metrics = self.evaluator.evaluate_metrics(x_batch.tolist(), _tqdm=False)
@@ -142,7 +151,10 @@ class Trainer(BaseTrainer):
                 #         mr, mrr, hit_10, hit_3, hit_1))
                 # logging.info(" step:{}, loss: {:.3f}".format(global_step, loss))
                 # predict = sess.run(model.predict, feed_dict={model.input_x: x_batch, model.input_y: y_batch})
-                losses.append(loss)
+                losses.append(loss.item())
+                self.backfoward(loss, model)
+                global_step += 1
+                print(f"global_step: {global_step}, loss:{loss.item():.4f}")
             self.check_loss_save(model, global_step, loss)
             # if epoch_num > self.min_num_epoch:
             mr, mrr, hit_10, hit_3, hit_1 = self.check_save_mrr(model, global_step)
@@ -164,7 +176,7 @@ class GraphTrainer(Trainer):
         super().__init__(dataset, model_name, min_num_epoch)
         self.dataset = dataset
 
-    def run(self, mode):
+    def run(self, mode, device=Config.device):
         model = self.get_model()
         triples, sentences = self.data_helper.get_all_datas()
         graph = Graph(triples=triples)
@@ -175,10 +187,10 @@ class GraphTrainer(Trainer):
             _path_ids = graph.get_path_context(entity_id)
             _edge_ids = graph.get_edge_context(entity_id)
             #
-            entity_id = torch.tensor([entity_id], dtype=torch.long).to(Config.device)
-            neighbor_ids = torch.tensor(_neighbor_ids, dtype=torch.long).to(Config.device)
-            path_ids = torch.tensor(_path_ids, dtype=torch.long).to(Config.device)
-            edge_ids = torch.tensor(_edge_ids, dtype=torch.long).to(Config.device)
+            entity_id = torch.tensor([entity_id], dtype=torch.long).to(device)
+            neighbor_ids = torch.tensor(_neighbor_ids, dtype=torch.long).to(device)
+            path_ids = torch.tensor(_path_ids, dtype=torch.long).to(device)
+            edge_ids = torch.tensor(_edge_ids, dtype=torch.long).to(device)
 
             global_weight_p, loss = model(entity_id, neighbor_ids, path_ids, edge_ids)
             self.backfoward(loss, model)

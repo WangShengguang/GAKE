@@ -49,10 +49,10 @@ def set_additional_args(args, configs):
     os.makedirs(args.log_dir, exist_ok=True)
     # set ckpt directory
     args.ckpt_dir = os.path.join(args.log_dir, 'ckpt')
-    os.makedirs(args.ckpt_dir)
+    os.makedirs(args.ckpt_dir, exist_ok=True)
     # set tensorboard log
     args.tb_dir = os.path.join(args.log_dir, args.ckpt_name + '_tensorboard')
-    os.makedirs(args.tb_dir)
+    os.makedirs(args.tb_dir, exist_ok=True)
 
 
 def setup_log(args, logfile_level=logging.DEBUG, stdout_level=logging.INFO):
