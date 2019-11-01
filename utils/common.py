@@ -1,12 +1,12 @@
 # Shared functions between each subtask manager (if any)
-import argparse
 import logging
-import time
 import os
-from setproctitle import setproctitle
+import random
+import time
 
 import numpy
 import torch
+from setproctitle import setproctitle
 
 
 def add_base_args(parser):
@@ -33,8 +33,9 @@ def add_base_args(parser):
 
 def set_random_seed(configs):
     ''' set random seed '''
-    numpy.random.seed(configs.seed)
-    torch.manual_seed(configs.seed)
+    numpy.random.seed(configs.rand_seed)
+    torch.manual_seed(configs.rand_seed)
+    random.seed(configs.rand_seed)
 
 
 def set_additional_args(args, configs):
@@ -48,10 +49,10 @@ def set_additional_args(args, configs):
     os.makedirs(args.log_dir, exist_ok=True)
     # set ckpt directory
     args.ckpt_dir = os.path.join(args.log_dir, 'ckpt')
-    os.makedirs(args.ckpt_dir)
+    os.makedirs(args.ckpt_dir, exist_ok=True)
     # set tensorboard log
-    args.tb_dir = os.path.join(args.log_dir, args.ckpt_name+'_tensorboard')
-    os.makedirs(args.tb_dir)
+    args.tb_dir = os.path.join(args.log_dir, args.ckpt_name + '_tensorboard')
+    os.makedirs(args.tb_dir, exist_ok=True)
 
 
 def setup_log(args, logfile_level=logging.DEBUG, stdout_level=logging.INFO):
@@ -74,10 +75,8 @@ def setup_log(args, logfile_level=logging.DEBUG, stdout_level=logging.INFO):
 
 def set_process_name(args):
     ''' set process name '''
-    if args.process_name:
-        setproctitle(args.log_process_name)
-    else:
-        setproctitle(proctitle)
+    process_name = args.process_name if args.process_name else args.log_process_name
+    setproctitle(process_name)
 
 
 def check_gpu(args):

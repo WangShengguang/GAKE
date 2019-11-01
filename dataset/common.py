@@ -1,14 +1,17 @@
-import os
 import json
+
 from nltk.tokenize import WordPunctTokenizer
+
 tokenizer = WordPunctTokenizer()
 
 
 def sentence_to_words(sentence):
-    sent_list = sentence.split(' ')
-    sent_list.remove('[CLS]')
-    sent_list.remove('[SEP]')
-    return tokenizer.tokenize(' '.join(sent_list))
+    sentence = sentence.lstrip('[CLS]').strip()
+    sent_li = sentence.split('[SEP]')
+    words_list = []
+    for s in sent_li:
+        words_list.extend(tokenizer.tokenize(s) + ['[SEP]'])
+    return ['[CLS]'] + words_list
 
 
 def get_id_table_from_set(item_set, save_file='', pos0=None, preserve=None):

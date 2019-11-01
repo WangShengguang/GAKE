@@ -4,5 +4,7 @@ tqdm>=0.25.1
 nltk
 torch
 torchvision
+keras
+ipdb
 tensorboardX
 setproctitle
