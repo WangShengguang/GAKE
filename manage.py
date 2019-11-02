@@ -18,15 +18,18 @@ def set_names(args):
     )
 
 
-def print_settings(args, configs):
+def print_settings(args, configs: Config):
     ''' logging some information into log '''
     logging.info('Configurations:')
     logging.info(f'\tDataset\t\t: {args.dataset}')
     logging.info(f'\tMode\t\t: {args.mode}')
     logging.info(f'\tUsing Model:')
-    logging.info(f'\t KGE: {args.model}')
+    logging.info(f'\t Main Model: {args.model}')
+    logging.info(f'\t\tSentence Encoder: {configs.sentence_encoder}')
+    logging.info(f'\t\tGraph Encoder: {configs.graph_encoder}')
     logging.info(f'\tParameters:')
-    logging.info(f'\t Learning Rate\t: {configs.lr}')  # if use Adam then remove
+    # if use Adam then remove
+    logging.info(f'\t Learning Rate\t: {configs.lr}')
     logging.info(f'\t Train Batch\t: {configs.batch_size}')
     logging.info(f'\t Test Batch\t: {configs.test_batch_size}')
     logging.info(f'Path:')
@@ -50,9 +53,11 @@ def parse_argument():
     return parser.parse_args()
 
 
-def run(args):
+def run(args, configs):
     from gcake.trainer import Trainer
-    Trainer(dataset=args.dataset, model_name=args.model, min_num_epoch=3).run(args.mode)
+    from gcake.constructor import Constructor
+    model = Constructor(args, configs).get_model()
+    Trainer(model, args, configs).run(args.mode)
 
 
 def main():
@@ -68,7 +73,7 @@ def main():
     use_cuda = common.check_gpu(args)
     print_settings(args, configs)
 
-    run(args)
+    run(args, configs)
 
     # If use cuda and have multiple GPU, then warp model with nn.DataParallel
     # the following code is going to be put in Trainer?!
