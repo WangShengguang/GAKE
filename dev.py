@@ -7,10 +7,12 @@ def data2id():
         data_helper = DataHelper(dataset)
         with open(os.path.join(data_dir, dataset, "entity2id.txt"), "w", encoding='utf-8') as f:
             f.write(f'{len(data_helper.entity2id)}\n')
-            f.write("".join([f"{entity}\t{id}\n" for entity, id in data_helper.entity2id.items()]))
+            f.write("".join([f"{entity}\t{id}\n" for entity,
+                             id in data_helper.entity2id.items()]))
         with open(os.path.join(data_dir, dataset, "relation2id.txt"), "w", encoding='utf-8') as f:
             f.write(f'{len(data_helper.relation2id)}\n')
-            f.write("".join([f"{entity}\t{id}\n" for entity, id in data_helper.relation2id.items()]))
+            f.write("".join([f"{entity}\t{id}\n" for entity,
+                             id in data_helper.relation2id.items()]))
         for data_type in ["train", 'valid', 'test']:
             triples, sentences = data_helper.get_data(data_type)
             dst_path = os.path.join(data_dir, dataset, f'{data_type}2id.txt')

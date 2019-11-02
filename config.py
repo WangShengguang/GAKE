@@ -13,6 +13,13 @@ ckpt_dir = os.path.join(output_dir, "ckpt")
 # torch.cuda.manual_seed(rand_seed) #gpu
 # tf.random.set_random_seed(rand_seed)
 
+class SubModelConfig(object):
+    """ configuration of sub-model to construct """
+    all_sentence_encoder = ['Transformer']
+    sentence_encoder = 'Transformer'
+    all_graph_encoder = ['GAKE']
+    graph_encoder = 'GAKE'
+
 
 class TorchConfig(object):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -23,7 +30,7 @@ class TorchConfig(object):
     clip_grad = 2
 
 
-class Config(TorchConfig):
+class Config(TorchConfig, SubModelConfig):
     load_pretrain = True
     rand_seed = 1234
     load_model_mode = "max_step"  # max_mrr,min_loss,max_step
@@ -35,7 +42,7 @@ class Config(TorchConfig):
     patience_num = 3
     #
     embedding_dim = 128  # entity enbedding dim, relation enbedding dim , word enbedding dim
-    max_len = 50
+    max_len = 50  # max sentence length
     batch_size = 16
 
     subtask = 'general'

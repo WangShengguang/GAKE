@@ -16,16 +16,21 @@ class GAKE(nn.Module):
         self.embeddings = ent_embeddings
         self.linear = nn.Linear(3, 1)
 
+    def set_ent_embeddings(self, ent_embeddings: nn.Embedding):  # TODO: only pass weight
+        self.embeddings = ent_embeddings
+
     def get_p(self, si_id, si_context_ids):
         if len(si_context_ids) == 0:
             return torch.zeros([1, 1]).to(Config.device)
 
         si_context_emb = self.embeddings(si_context_ids)
-        context_pie = torch.sum(si_context_emb, dim=0) / torch.norm(si_context_emb, p=2)  # (n,dim)
+        context_pie = torch.sum(si_context_emb, dim=0) / \
+            torch.norm(si_context_emb, p=2)  # (n,dim)
 
         def cacu_exp(node_ids):
             nodes_emb = self.embeddings(node_ids)
-            exp_res = torch.exp(torch.mm(nodes_emb, torch.transpose(context_pie.unsqueeze(0), 0, 1)))
+            exp_res = torch.exp(
+                torch.mm(nodes_emb, torch.transpose(context_pie.unsqueeze(0), 0, 1)))
             return exp_res
 
         p = cacu_exp(si_id) / torch.sum(cacu_exp(si_context_ids))
@@ -35,7 +40,8 @@ class GAKE(nn.Module):
         _neighbors_p = self.get_p(entity_id, neighbor_ids)
         _paths_p = self.get_p(entity_id, path_ids)
         _edge_p = self.get_p(entity_id, edge_ids)
-        global_weight_p = self.linear(torch.cat([_neighbors_p, _paths_p, _edge_p]).squeeze())  # 全局概率，最大化
+        global_weight_p = self.linear(
+            torch.cat([_neighbors_p, _paths_p, _edge_p]).squeeze())  # 全局概率，最大化
         loss = 1 - global_weight_p
         return global_weight_p, loss
 
