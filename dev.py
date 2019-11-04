@@ -8,25 +8,17 @@ def data2id():
         with open(os.path.join(data_dir, dataset, "entity2id.txt"), "w", encoding='utf-8') as f:
             f.write(f'{len(data_helper.entity2id)}\n')
             f.write("".join([f"{entity}\t{id}\n" for entity,
-                             id in data_helper.entity2id.items()]))
+                                                     id in data_helper.entity2id.items()]))
         with open(os.path.join(data_dir, dataset, "relation2id.txt"), "w", encoding='utf-8') as f:
             f.write(f'{len(data_helper.relation2id)}\n')
             f.write("".join([f"{entity}\t{id}\n" for entity,
-                             id in data_helper.relation2id.items()]))
+                                                     id in data_helper.relation2id.items()]))
         for data_type in ["train", 'valid', 'test']:
             triples, sentences = data_helper.get_data(data_type)
             dst_path = os.path.join(data_dir, dataset, f'{data_type}2id.txt')
             with open(dst_path, "w", encoding="utf-8") as f:
                 f.write(f"{len(triples)}\n")
                 f.write("".join([f"{h}\t{t}\t{r}\n" for h, r, t in triples]))
-
-
-def gake():
-    dataset = "WN18RR"
-    model_name = "GAKE"
-    mode = "train"
-    from gcake.trainer import GraphTrainer
-    GraphTrainer(dataset, model_name).run(mode)
 
 
 def main():

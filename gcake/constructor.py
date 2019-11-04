@@ -1,6 +1,9 @@
 # Model constructor
 
 import logging
+
+from torch import nn
+
 from gcake.data_helper import DataHelper
 
 logger = logging.getLogger('constructor')
@@ -23,16 +26,16 @@ class Constructor(object):
         assert self.sentence_encoder_name in self.configs.all_sentence_encoder
 
         if self.sentence_encoder_name == 'Transformer':
-            from gcake.model.sentence_encoder.Transformer import TransformerSentenceEncoder
-            return TransformerSentenceEncoder(d_model=self.configs.embedding_dim, nhead=4, dim_feedforward=2048, num_layers=3, sent_len=sent_len)
+            from gcake.model.sentence_encoder import TransformerSentenceEncoder
+            return TransformerSentenceEncoder(d_model=self.configs.embedding_dim, nhead=4, dim_feedforward=2048,
+                                              num_layers=3, sent_len=sent_len)
 
-    def _get_graph_encoder(self, triples, num_entity, num_relation, embedding_dim):
+    def _get_graph_encoder(self, graph, num_entity, num_relation, embedding_dim):
         """ get graph encoder model """
         assert self.graph_encoder_name in self.configs.all_graph_encoder
-
         if self.graph_encoder_name == 'GAKE':
-            from gcake.model.graph_encoder.Transformer import GAKEGraphEncoder
-            return GAKEGraphEncoder(triples, num_entity, num_relation, embedding_dim)
+            from gcake.model.graph_encoder import GAKEGraphEncoder
+            return GAKEGraphEncoder(graph, num_entity, num_relation, embedding_dim)
 
     def _warp_gpu(self, model):
         """ send the model to device and warp the model if use multiple GPU """
@@ -45,10 +48,6 @@ class Constructor(object):
         """ construct model """
         logger.info('Constructing model...')
 
-        # TODO: not sure what's the purpos of this, isn't it different kind of model?!
-        from gcake.models.gake import GAKE
-        from gcake.model.GCAKE import GCAKE
-
         # TODO: this should be pass from outside
         num_entity = len(self.data_helper.entity2id)  # TODO  len() != max()
         num_relation = len(self.data_helper.relation2id)
@@ -58,19 +57,28 @@ class Constructor(object):
         embedding_dim = self.configs.embedding_dim
 
         if self.model_name == "GCAKE":
+            from gcake.model.GCAKE import GCAKE
             # TODO: should not depend on this (i.e. construct graph outside the model)
-            triples, sentences = self.data_helper.get_data("train")
+            triples, sentences = self.data_helper.get_all_datas()
 
             sentence_encoder = self._get_sentence_encoder(sent_len)
+            from gcake.models.modules import Graph
+            graph = Graph(triples)
             graph_encoder = self._get_graph_encoder(
-                triples, num_entity, num_relation, embedding_dim)
+                graph, num_entity, num_relation, embedding_dim)
 
             model = GCAKE(sentence_encoder, graph_encoder,
                           num_entity, num_relation,
                           total_word=num_word, sent_len=self.configs.max_len,
                           dim=embedding_dim)
-
+        elif self.model_name == "GAKE":
+            from gcake.models.modules import Graph
+            triples, sentences = self.data_helper.get_all_datas()
+            graph = Graph(triples)
+            model = self._get_graph_encoder(
+                graph, num_entity, num_relation, embedding_dim)
         else:  # TODO: not sure what's the purpos of this, isn't it different kind of model?!
+            from gcake.models.gake import GAKE
             Model = {"GAKE": GAKE}[self.model_name]
             model = Model(num_entity, num_relation, dim=embedding_dim)
         self._warp_gpu(model)

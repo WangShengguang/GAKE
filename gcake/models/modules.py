@@ -37,36 +37,51 @@ class Graph(object):
 
         return entities, relations
 
-    def get_neighbor_context(self, entity_id, num=10):
+    def get_neighbor_context(self, entity_id, max_num=100):
+        """三元组"""
         entity_node = self.entities[entity_id]
         neighbor_relations = entity_node.outs
-        neighbor_entities = set()
+        neighbor_triples = set()
         for rel in neighbor_relations:
-            neighbor_entities.update(rel.outs)
-        neighbors = list(neighbor_relations) + list(neighbor_entities)
-        return [node.id for node in neighbors]
+            for tail in rel.outs:
+                neighbor_triples.add((entity_node, rel, tail))
+        #
+        if len(neighbor_triples) > max_num:
+            neighbor_triples = random.sample(neighbor_triples, max_num)
+        neighbors = []
+        for tri in neighbor_triples:
+            neighbors.extend(tri)
+        return [entity_node] + neighbors
 
     def get_path_context(self, entity_id, path_len=5):
         """
         A path in a given knowledge graph reflects both direct and indirect relations
             between entities.
+            随机游走
         """
         node = self.entities[entity_id]  # vertex
-        visited_edges = set()
+        edges_context = set()
         times = 0
-        while len(visited_edges) < path_len and times < 2 ** path_len:
+        while len(edges_context) < path_len * 2 and times < 2 ** path_len:
             times += 1
             if node.outs:
-                node = random.sample(node.outs, 1)[0]
+                edge = random.sample(node.outs, 1)[0]
+                node = random.sample(edge.outs, 1)[0]
             elif node.ins:
-                node = random.sample(node.ins, 1)[0]
-            if node.dtype == "relation":
-                visited_edges.add(node)
-        return [node.id for node in visited_edges]
+                edge = random.sample(node.ins, 1)[0]
+                node = random.sample(edge.ins, 1)[0]
+            else:
+                break
+            edges_context.add(edge)
+            edges_context.add(node)
+        return [self.entities[entity_id]] + list(edges_context)
 
-    def get_edge_context(self, entity_id):
+    def get_edge_context(self, entity_id, max_num=100):
         """ All relations connecting a given entity are representative to that entity
+            所有相邻边
         """
         entity_node = self.entities[entity_id]  # edge
         edge_context = list(entity_node.ins) + list(entity_node.outs)
-        return [node.id for node in edge_context]
+        if len(edge_context) > max_num:
+            edge_context = random.sample(edge_context, max_num)
+        return [entity_node] + edge_context

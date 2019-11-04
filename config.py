@@ -49,6 +49,9 @@ class Config(TorchConfig, SubModelConfig):
     test_batch_size = 128
     lr = 0.0001
 
+    #
+    test_count = 100
+
 
 class DevConfig(Config):
     """ only used for development purpose """

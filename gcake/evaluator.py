@@ -237,9 +237,9 @@ class Evaluator(Predictor):
         链接预测，预测头实体或尾实体
         """
         triples, sentences = self.data_helper.get_data(data_type)
-        logging.info("* model:{},{} test_link_prediction start, {}: {} ".format(
-            self.model_name, self.dataset, data_type, len(triples)))
-        metrics = self.evaluate_metrics(triples, _tqdm=_tqdm)
+        logging.info("* model:{},{} test_link_prediction start, {}: {} ,Config.test_count：{}".format(
+            self.model_name, self.dataset, data_type, len(triples), Config.test_count))
+        metrics = self.evaluate_metrics(triples[:Config.test_count], _tqdm=_tqdm)
         mr, mrr = metrics["ave"]["MR"], metrics["ave"]["MRR"]
         hit_10, hit_3, hit_1 = metrics["ave"]["Hit@10"], metrics["ave"]["Hit@3"], metrics["ave"]["Hit@1"]
         # logging.info("mr:{:.3f}, mrr:{:.3f}, hit_1:{:.3f}, hit_3:{:.3f}, hit_10:{:.3f}".format(
