@@ -55,22 +55,28 @@ class Constructor(object):
 
         sent_len = self.configs.max_len
         embedding_dim = self.configs.embedding_dim
-
-        if self.model_name == "GCAKE":
-            from gcake.model.GCAKE import GCAKE
-            # TODO: should not depend on this (i.e. construct graph outside the model)
+        if self.model_name == 'GCAKE':
+            from gcake.model import GCAKE
             triples, sentences = self.data_helper.get_all_datas()
-
-            sentence_encoder = self._get_sentence_encoder(sent_len)
-            from gcake.models.modules import Graph
-            graph = Graph(triples)
-            graph_encoder = self._get_graph_encoder(
-                graph, num_entity, num_relation, embedding_dim)
-
-            model = GCAKE(sentence_encoder, graph_encoder,
-                          num_entity, num_relation,
-                          total_word=num_word, sent_len=self.configs.max_len,
-                          dim=embedding_dim)
+            model = GCAKE(all_triples=triples,
+                          num_entity=num_entity, num_relation=num_relation, total_word=num_word,
+                          dim=embedding_dim, sent_len=sent_len,
+                          use_graph_encoder=self.args.use_graph)
+        # if self.model_name == "GCAKE":
+        #     from gcake.model import GCAKE
+        #     # TODO: should not depend on this (i.e. construct graph outside the model)
+        #     triples, sentences = self.data_helper.get_all_datas()
+        #
+        #     sentence_encoder = self._get_sentence_encoder(sent_len)
+        #     from gcake.models.modules import Graph
+        #     graph = Graph(triples)
+        #     graph_encoder = self._get_graph_encoder(
+        #         graph, num_entity, num_relation, embedding_dim)
+        #
+        #     model = GCAKE(sentence_encoder, graph_encoder,
+        #                   num_entity, num_relation,
+        #                   total_word=num_word, sent_len=self.configs.max_len,
+        #                   dim=embedding_dim)
         elif self.model_name == "GAKE":
             from gcake.models.modules import Graph
             triples, sentences = self.data_helper.get_all_datas()

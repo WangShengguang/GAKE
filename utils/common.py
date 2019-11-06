@@ -58,6 +58,24 @@ def set_additional_args(args, configs):
     os.makedirs(args.tb_dir, exist_ok=True)
 
 
+def _old_setup_log(log_process_name, logfile_level=logging.DEBUG, stdout_level=logging.INFO):
+    ''' setup log '''
+    logfile = os.path.join(".", f'{log_process_name}.log')
+    # configure log
+    logging.basicConfig(level=logfile_level,
+                        format='%(asctime)s %(name)-13s %(levelname)-8s %(message)s',
+                        datefmt='%m-%d %H:%M',
+                        filename=logfile,
+                        filemode='w')
+    # handler for stdout
+    console = logging.StreamHandler()
+    console.setLevel(stdout_level)
+    formatter = logging.Formatter('%(name)-13s: %(levelname)-8s %(message)s')
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+
+
 def setup_log(log_name, logfile_level=logging.DEBUG, stdout_level=logging.INFO):
     ''' setup log '''
     logging_path = os.path.join(root_dir, f'{log_name}.log')
@@ -66,13 +84,14 @@ def setup_log(log_name, logfile_level=logging.DEBUG, stdout_level=logging.INFO):
         logging_path,
         maxBytes=20 * 1024 * 1024, backupCount=5, encoding='utf-8')
     log_handle.setLevel(logfile_level)
-    # handler for stdout
     console = logging.StreamHandler()
     console.setLevel(stdout_level)
-    #
+
     logging.basicConfig(handlers=[log_handle, console],
-                        format="%(asctime)s - %(levelname)-8s %(filename)-13s %(funcName)s %(lineno)-3s - %(message)s"
+                        level=logfile_level,
+                        format="%(asctime)s - %(levelname)s %(filename)s %(funcName)s %(lineno)s - %(message)s",
                         )
+    logging.getLogger('')
 
 
 def set_process_name(args):

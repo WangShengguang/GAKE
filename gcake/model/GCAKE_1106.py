@@ -1,15 +1,16 @@
 import torch
 from torch import nn
 
-from config import Config
 from .models import GraphAttention
 from .models import TriplesEncoder, TransformerSentenceEncoder
+
+from config import Config
 
 
 class GCAKE(nn.Module):
     def __init__(self, all_triples,
                  num_entity: int, num_relation: int, total_word: int,
-                 dim: int, sent_len: int, use_graph_encoder=True):
+                 dim: int, sent_len: int):
         super(GCAKE, self).__init__()
         self.ent_embedding = nn.Embedding(num_entity, dim)
         self.rel_embedding = nn.Embedding(num_relation, dim)
@@ -19,27 +20,26 @@ class GCAKE(nn.Module):
             d_model=dim, nhead=4, dim_feedforward=2048, num_layers=3)
         self.sent_encoder = TransformerSentenceEncoder(
             d_model=dim, nhead=4, dim_feedforward=2048, num_layers=3, sent_len=sent_len)
+        self.graph_encoder = GraphAttention(all_triples, dim, self.ent_embedding, self.rel_embedding)
 
+        self.second_triple_encoder = nn.TransformerDecoderLayer(
+            d_model=dim, nhead=4, dim_feedforward=2048)
+
+        self.classifier = nn.Linear(in_features=3 * dim * 2, out_features=1)
+
+        self.layer_norm = nn.LayerNorm(dim * 2)
         # self.criterion = nn.BCELoss()
         margin = 1
         self.criterion = nn.MarginRankingLoss(margin, False)
         self.neg_y_label = torch.tensor([-1]).to(Config.device)
 
+        #
         # self.criterion = nn.Softplus()
         # torch.mean(self.criterion(score * self.batch_y)) + self.config.lmbda * regul
         self.sigmoid = nn.Sigmoid()
         self.bce_loss = nn.BCELoss()  # Binary Cross Entropy
         self.soft_plus = nn.Softplus()
         self.l2_reg_lambda = 0.001
-        self.use_graph = use_graph_encoder
-        self.parms_init(all_triples, dim, use_graph=use_graph_encoder)
-
-    def parms_init(self, all_triples, dim, use_graph=True):
-        if use_graph:
-            dim *= 2  # torch.cat([triples,graph],dim=0)
-            self.graph_encoder = GraphAttention(all_triples, dim, self.ent_embedding, self.rel_embedding)
-        self.classifier = nn.Linear(in_features=3 * dim, out_features=1)
-        self.layer_norm = nn.LayerNorm(dim)
 
     def _lookup(self, hrts, sentences=None):
         """ look up embedding """
@@ -59,7 +59,7 @@ class GCAKE(nn.Module):
             negatives = all_encoded[torch.where(y_labels < 0.0001)[0]]
         return positives, negatives
 
-    def _forward_without_graph(self, hrts, sentences, y_labels=None):
+    def _forward(self, hrts, sentences, y_labels=None):
         """ train """
         h_embed, r_embed, t_embed, sentences_embed = self._lookup(
             hrts, sentences)
@@ -67,11 +67,18 @@ class GCAKE(nn.Module):
 
         sent_encoded = self.sent_encoder(sentences_embed)
         triples_sent_encoded = self.triples_encoder(triples_embed, sent_encoded)
+        graph_encoded = self.graph_encoder(hrts)
+        triples_graph_encoded = self.triples_encoder(triples_embed, graph_encoded)
 
-        positives_encoded, negatives_encoded = self.split_pos_neg(triples_sent_encoded, y_labels)
+        all_encoded = torch.cat([triples_sent_encoded, triples_graph_encoded], dim=-1)
+
+        positives_encoded, negatives_encoded = self.split_pos_neg(all_encoded, y_labels)
 
         p_score = self.classifier(positives_encoded.view(positives_encoded.shape[0], -1))
         n_score = self.classifier(negatives_encoded.view(negatives_encoded.shape[0], -1))
+
+        # import ipdb
+        # ipdb.set_trace()
 
         if y_labels is None:
             return p_score,
@@ -80,7 +87,7 @@ class GCAKE(nn.Module):
             loss = self.criterion(p_score, n_score, self.neg_y_label)
             return p_score, loss
 
-    def _forward_bce(self, hrts, sentences, y_labels=None):
+    def __forward(self, hrts, sentences, y_labels=None):
         """ train """
         h_embed, r_embed, t_embed, sentences_embed = self._lookup(
             hrts, sentences)
@@ -88,6 +95,11 @@ class GCAKE(nn.Module):
 
         sent_encoded = self.sent_encoder(sentences_embed)
         triples_sent_encoded = self.triples_encoder(triples_embed, sent_encoded)
+        # graph_encoded = self.graph_encoder(hrts)
+        # triples_graph_encoded = self.triples_encoder(triples_embed, graph_encoded)
+
+        # all_encoded = torch.cat([triples_sent_encoded, triples_graph_encoded], dim=-1)
+
         score = self.classifier(triples_sent_encoded.view(triples_sent_encoded.shape[0], -1))
         pred = self.sigmoid(score)
 
@@ -99,7 +111,7 @@ class GCAKE(nn.Module):
             loss = self.bce_loss(pred, y_labels)
             return pred, loss
 
-    def _forward(self, hrts, sentences, y_labels=None):
+    def forward(self, hrts, sentences, y_labels=None):
         """ train """
         h_embed, r_embed, t_embed, sentences_embed = self._lookup(
             hrts, sentences)
@@ -122,9 +134,3 @@ class GCAKE(nn.Module):
             loss = (torch.mean(losses) +
                     self.l2_reg_lambda * (torch.norm(self.classifier.weight) + torch.norm(self.classifier.bias)))
             return pred, loss
-
-    def forward(self, hrts, sentences, y_labels=None):
-        if self.use_graph:
-            return self._forward(hrts, sentences, y_labels=y_labels)
-        else:
-            return self._forward_without_graph(hrts, sentences, y_labels=y_labels)

@@ -135,8 +135,7 @@ class Trainer(BaseTrainer):
             print("* Model load from file: {}".format(model_path))
         else:
             global_step = 0
-        per_epoch_step = len(self.data_helper.get_data("train")[
-                                 0]) // Config.batch_size // 2  # 正负样本
+        per_epoch_step = len(self.data_helper.get_data("train")[0]) // Config.batch_size // 2  # 正负样本
         start_epoch_num = global_step // per_epoch_step  # 已经训练过多少epoch
         print("start_epoch_num: {}".format(start_epoch_num))
 
@@ -148,7 +147,7 @@ class Trainer(BaseTrainer):
             for triples, sentences, y_labels in self.data_helper.batch_iter(data_type="train",
                                                                             batch_size=Config.batch_size,
                                                                             _shuffle=True):
-                loss = model(triples, sentences, y_labels)
+                pred, loss = model(triples, sentences, y_labels)
                 # if global_step % Config.check_step == 0: # train step metrics
                 #     self.evaluator.set_model(sess, model)
                 #     metrics = self.evaluator.evaluate_metrics(x_batch.tolist(), _tqdm=False)
@@ -164,7 +163,8 @@ class Trainer(BaseTrainer):
                 losses.append(loss.item())
                 self.backward(loss, model)
                 global_step += 1
-                print(f"global_step: {global_step}, loss:{loss.item():.4f}")  # TODO: use logging
+                logging.info(f"epoch:{epoch_num}({per_epoch_step}), global_step: {global_step}, "
+                             f"loss:{loss.item():.4f}")
             self.check_loss_save(model, global_step, loss)
             # if epoch_num > self.min_num_epoch:
             mr, mrr, hit_10, hit_3, hit_1 = self.check_save_mrr(

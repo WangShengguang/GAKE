@@ -49,6 +49,8 @@ def parse_argument():
     parser.add_argument('--model', type=str, default='GCAKE',
                         choices=['GAKE', 'GCAKE'],
                         help='Model for KGE')
+    parser.add_argument('--use_graph', action="store_true", help="是否使用Graph Embedding")
+
     common.add_base_args(parser)
     return parser.parse_args()
 
@@ -70,9 +72,9 @@ def main():
     configs = Config()
 
     set_names(args)
+    common.setup_log(args.log_process_name)
     common.set_random_seed(configs)
     common.set_additional_args(args, configs)
-    common.setup_log(args.log_process_name)
     common.set_process_name(args)
     use_cuda = common.check_gpu(args)
     print_settings(args, configs)
