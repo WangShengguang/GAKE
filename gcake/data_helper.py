@@ -67,14 +67,16 @@ class DataHelper(object):
         assert len(batch_positive_samples) == len(batch_negative_triples) == len(batch_negative_sentences)
         return batch_negative_triples, batch_negative_sentences
 
-    def batch_iter(self, data_type, batch_size, _shuffle=True):
+    def batch_iter(self, data_type, batch_size, _shuffle=True, negative_y_label=-1.0):
         positive_triples, positive_sentences = self.get_data(data_type)
         semi_data_size = len(positive_triples)
         order = list(range(semi_data_size))
         if _shuffle:
             np.random.shuffle(order)
         semi_batch_size = batch_size // 2
-        for batch_step in range(semi_data_size // semi_batch_size):
+        epoch_step = semi_data_size // semi_batch_size
+
+        for batch_step in range(epoch_step):
             # print("batch_step： {}".format(batch_step))
             batch_idxs = order[batch_step * semi_batch_size:(batch_step + 1) * semi_batch_size]
             if len(batch_idxs) != semi_batch_size:
@@ -88,7 +90,7 @@ class DataHelper(object):
                                                # maxlen=min(Config.max_len, max([len(s) for s in sentences])),
                                                maxlen=Config.max_len,
                                                padding="post", value=self.word2id["[PAD]"])
-            y_batch = [[1.0]] * semi_batch_size + [[-1.0]] * semi_batch_size
+            y_batch = [[1.0]] * semi_batch_size + [[negative_y_label]] * semi_batch_size
             #
             triples = torch.tensor(triples, dtype=torch.long).to(Config.device)
             sentences = torch.tensor(sentences, dtype=torch.long).to(Config.device)

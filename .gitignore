@@ -110,3 +110,7 @@ venv.bak/
 .idea
 local/
 gcake/models/transformer
+output/
+lfs/
+hooks/
+*.txt

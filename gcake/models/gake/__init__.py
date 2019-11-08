@@ -1,3 +1,3 @@
-from .gake import GAKE
+from .gake import GAKE, GakeModel
 
-__all__ = ["GAKE"]
+__all__ = ["GAKE", 'GakeModel']

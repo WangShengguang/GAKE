@@ -3,10 +3,13 @@ import logging
 import os
 import random
 import time
+from logging import handlers
 
 import numpy
 import torch
 from setproctitle import setproctitle
+
+from config import root_dir
 
 
 def add_base_args(parser):
@@ -55,9 +58,9 @@ def set_additional_args(args, configs):
     os.makedirs(args.tb_dir, exist_ok=True)
 
 
-def setup_log(args, logfile_level=logging.DEBUG, stdout_level=logging.INFO):
+def _old_setup_log(log_process_name, logfile_level=logging.DEBUG, stdout_level=logging.INFO):
     ''' setup log '''
-    logfile = os.path.join(args.log_dir, f'{args.log_process_name}.log')
+    logfile = os.path.join(".", f'{log_process_name}.log')
     # configure log
     logging.basicConfig(level=logfile_level,
                         format='%(asctime)s %(name)-13s %(levelname)-8s %(message)s',
@@ -73,10 +76,27 @@ def setup_log(args, logfile_level=logging.DEBUG, stdout_level=logging.INFO):
     logging.getLogger('').addHandler(console)
 
 
+def setup_log(log_name, logfile_level=logging.DEBUG, stdout_level=logging.INFO):
+    ''' setup log '''
+    logging_path = os.path.join(root_dir, f'{log_name}.log')
+    # configure log
+    log_handle = logging.handlers.RotatingFileHandler(
+        logging_path,
+        maxBytes=20 * 1024 * 1024, backupCount=5, encoding='utf-8')
+    log_handle.setLevel(logfile_level)
+    console = logging.StreamHandler()
+    console.setLevel(stdout_level)
+
+    logging.basicConfig(handlers=[log_handle, console],
+                        level=logfile_level,
+                        format="%(asctime)s - %(levelname)s %(filename)s %(funcName)s %(lineno)s - %(message)s",
+                        )
+    logging.getLogger('')
+
+
 def set_process_name(args):
     ''' set process name '''
-    process_name = args.process_name if args.process_name else args.log_process_name
-    setproctitle(process_name)
+    setproctitle(args.process_name)
 
 
 def check_gpu(args):

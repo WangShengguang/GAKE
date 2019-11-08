@@ -1,6 +1,7 @@
 # Manager for KGE
 import argparse
 import logging
+import sys
 
 from config import Config
 from utils import common
@@ -9,9 +10,8 @@ from utils import common
 def set_names(args):
     ''' set names for log, process and checkpoint '''
     # get log filename and process name
-    args.log_process_name = '{}_{}_{}'.format(
-        args.dataset, args.model, args.mode,
-    )
+    args.log_process_name = "_".join([args.dataset, args.model, args.mode])
+    args.process_name = f"{sys.argv[0]} {args.dataset[0]} {args.model[0]}{args.model[-1]}"
     # get checkpoint name
     args.ckpt_name = '{}_{}'.format(
         args.dataset, args.model
@@ -40,24 +40,30 @@ def print_settings(args, configs: Config):
 def parse_argument():
     parser = argparse.ArgumentParser(
         description='GCAKE Manager')
-    parser.add_argument('--dataset', type=str, default='FB15K-237',
-                        choices=['FB15K-237', 'WN18RR'],
+    parser.add_argument('--dataset', type=str, default='lawdata',
+                        choices=['FB15K-237', 'WN18RR', 'lawdata'],
                         help='Dataset')
     parser.add_argument('--mode', type=str, default='train',
                         choices=['train', 'test'],
                         help='Mode to use')
     parser.add_argument('--model', type=str, default='GCAKE',
-                        choices=['GCAKE'],
+                        choices=['GAKE', 'GCAKE'],
                         help='Model for KGE')
+    parser.add_argument('--use_graph', action="store_true", help="是否使用Graph Embedding")
+
     common.add_base_args(parser)
     return parser.parse_args()
 
 
 def run(args, configs):
-    from gcake.trainer import Trainer
+    from gcake.trainer import Trainer, GraphTrainer
     from gcake.constructor import Constructor
     model = Constructor(args, configs).get_model()
-    Trainer(model, args, configs).run(args.mode)
+    if args.model == "GAKE":
+        trainer = GraphTrainer(model, args, configs)
+    else:
+        trainer = Trainer(model, args, configs)
+    trainer.run(args.mode)
 
 
 def main():
@@ -66,9 +72,9 @@ def main():
     configs = Config()
 
     set_names(args)
+    common.setup_log(args.log_process_name)
     common.set_random_seed(configs)
     common.set_additional_args(args, configs)
-    common.setup_log(args)
     common.set_process_name(args)
     use_cuda = common.check_gpu(args)
     print_settings(args, configs)
@@ -92,5 +98,25 @@ def main():
     # tbwriter = SummaryWriter(logdir=args.tb_dir)
 
 
+def record_pid():
+    # 获取进程的pid
+    import os, sys, datetime
+    pid = os.getpid()
+    # print('* pid: ', pid)
+    #
+    process_name = f"{sys.argv[0]} {' '.join(sys.argv[1:])}"
+    data_str = str(datetime.datetime.now())
+    log_str = f"{data_str} {process_name} * PID: {pid}\n"
+    print(log_str)
+    with open('./pids.txt', 'a', encoding='UTF-8') as f:
+        f.write(log_str)
+
+
 if __name__ == '__main__':
+    """
+    example:
+        nohup python3 manage.py --model GCAKE --mode train --dataset FB15K-237 --use_graph  &>GCAKE_FB.out&
+        python3 manage.py --model GCAKE --mode train --dataset WN18RR --use_graph
+    """
+    record_pid()
     main()

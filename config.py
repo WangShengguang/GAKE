@@ -37,17 +37,21 @@ class Config(TorchConfig, SubModelConfig):
     #
     learning_rate = 0.001
     #
-    min_epoch_nums = 2
-    max_epoch_nums = 10
+    min_epoch_nums = 20
+    max_epoch_nums = 100
     patience_num = 3
     #
     embedding_dim = 128  # entity enbedding dim, relation enbedding dim , word enbedding dim
     max_len = 50  # max sentence length
-    batch_size = 16
+    batch_size = 32
 
     subtask = 'general'
     test_batch_size = 128
     lr = 0.0001
+
+    #
+    # train_count = 1000  # TODO for debug
+    test_count = 10
 
 
 class DevConfig(Config):
