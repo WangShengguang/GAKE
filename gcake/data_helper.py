@@ -74,7 +74,9 @@ class DataHelper(object):
         if _shuffle:
             np.random.shuffle(order)
         semi_batch_size = batch_size // 2
-        for batch_step in range(semi_data_size // semi_batch_size):
+        epoch_step = semi_data_size // semi_batch_size
+
+        for batch_step in range(epoch_step):
             # print("batch_step： {}".format(batch_step))
             batch_idxs = order[batch_step * semi_batch_size:(batch_step + 1) * semi_batch_size]
             if len(batch_idxs) != semi_batch_size:

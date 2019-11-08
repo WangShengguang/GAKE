@@ -113,3 +113,4 @@ gcake/models/transformer
 output/
 lfs/
 hooks/
+*.txt

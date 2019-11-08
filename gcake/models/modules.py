@@ -1,7 +1,7 @@
 import random
 
 
-class Node(object):
+class _Node(object):
     def __init__(self, id, dtype):
         """
         :param dtype:  entity, relation
@@ -12,7 +12,7 @@ class Node(object):
         self.outs = set()  # 关系指针
 
 
-class Graph(object):
+class _Graph(object):
     def __init__(self, triples):
         self.entities, self.relations = self.create_graph(triples)
 
@@ -30,10 +30,10 @@ class Graph(object):
             h_node, t_node = entities[h], entities[t]
             r_node = relations[r]
             # h -> r -> t
-            h_node.outs.add(r_node)  # h -> r
-            r_node.ins.add(h_node)  # h <- r
-            r_node.outs.add(t_node)  # r -> t
-            t_node.ins.add(r_node)  # r <- t
+            h_node.outs.add(r_node)  # h  ->  r
+            r_node.ins.add(h_node)  # h   <-  r
+            r_node.outs.add(t_node)  # r  ->  t
+            t_node.ins.add(r_node)  # r   <-  t
 
         return entities, relations
 

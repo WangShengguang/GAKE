@@ -38,6 +38,14 @@ class Graph(object):
 
         return entities, relations
 
+    def get_node(self, node_id):
+        node_id = int(node_id)
+        if node_id in self.entities:
+            node = self.entities[node_id]
+        else:
+            node = self.relations[node_id]
+        return node
+
     def get_neighbor_context(self, node: Node):
         """相连的三元组
             h -> r,t

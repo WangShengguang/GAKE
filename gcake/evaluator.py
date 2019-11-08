@@ -26,7 +26,7 @@ class Predictor(object):
         model.eval()
         self.model = model
 
-    def predict(self, batch_h: List, batch_t: List, batch_r: List):
+    def predict(self, batch_h: List, batch_r: List, batch_t: List):
         """ 用于预测
         :param batch_h: [0,6,3,...,h_id]
         :param batch_t: [0,6,3,...,t_id]
@@ -34,7 +34,7 @@ class Predictor(object):
         :return:
         """
         input_size, _batch_size = len(batch_h), Config.batch_size
-        x_data = list(zip(batch_h, batch_t, batch_r)) + [(0, 0, 0)] * (_batch_size - input_size % _batch_size)
+        x_data = list(zip(batch_h, batch_r, batch_t)) + [(0, 0, 0)] * (_batch_size - input_size % _batch_size)
         prediction = []
         for input_x in [x_data[i:i + _batch_size] for i in range(0, len(x_data), _batch_size)]:
             _pred = self.model(input_x)
@@ -52,10 +52,10 @@ class Predictor(object):
         Returns:
             list: k possible head entity ids order by score desc
         '''
-        test_h = list(range(self.entity_nums))
+        test_h = list(self.data_helper.entity2id.values())
         test_r = [r] * self.entity_nums
         test_t = [t] * self.entity_nums
-        predictions = self.predict(test_h, test_t, test_r)
+        predictions = self.predict(test_h, test_r, test_t)
         head_ids = predictions.flatten().argsort().tolist()  # dist越小越相似
         # print(head_ids)
         return head_ids
@@ -72,8 +72,8 @@ class Predictor(object):
         '''
         test_h = [h] * self.entity_nums
         test_r = [r] * self.entity_nums
-        test_t = list(range(self.entity_nums))
-        predictions = self.predict(test_h, test_t, test_r)
+        test_t = list(self.data_helper.entity2id.values())
+        predictions = self.predict(test_h, test_r, test_t)
         tail_ids = predictions.flatten().argsort().tolist()  # dist越小越相似
         # print(tail_ids)
         return tail_ids
@@ -173,8 +173,7 @@ class Evaluator(Predictor):
         # logging.info("*model:{} {}, test start, {}: {} ".format(self.model_name, self.dataset, data_type, total))
         total = len(triples_li)
         if _tqdm:
-            triples_li = tqdm(triples_li, desc=f"{self.model_name} {self.dataset} test_link_prediction")
-
+            triples_li = tqdm(triples_li, desc=f"{self.model_name} {self.dataset} test_link_prediction", total=total)
         ranks = []
         ranks_left = []
         ranks_right = []
@@ -191,7 +190,7 @@ class Evaluator(Predictor):
             hit_num = {k: 1 if rank <= k else 0 for k in hits_N}
             return hit_num
 
-        for step, (h, t, r) in enumerate(triples_li):
+        for step, (h, r, t) in enumerate(triples_li):
             # left_rank, right_rank = self.get_rank_score(h, t, r)
             pred_head_ids = self.predict_head_entity(t, r)
             left_rank = pred_head_ids.index(h) + 1

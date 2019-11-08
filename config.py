@@ -43,14 +43,15 @@ class Config(TorchConfig, SubModelConfig):
     #
     embedding_dim = 128  # entity enbedding dim, relation enbedding dim , word enbedding dim
     max_len = 50  # max sentence length
-    batch_size = 16
+    batch_size = 32
 
     subtask = 'general'
     test_batch_size = 128
     lr = 0.0001
 
     #
-    test_count = 100
+    # train_count = 1000  # TODO for debug
+    test_count = 10
 
 
 class DevConfig(Config):

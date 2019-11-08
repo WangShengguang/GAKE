@@ -1,10 +1,10 @@
 # Manager for KGE
 import argparse
 import logging
+import sys
 
 from config import Config
 from utils import common
-import sys
 
 
 def set_names(args):
@@ -40,8 +40,8 @@ def print_settings(args, configs: Config):
 def parse_argument():
     parser = argparse.ArgumentParser(
         description='GCAKE Manager')
-    parser.add_argument('--dataset', type=str, default='FB15K-237',
-                        choices=['FB15K-237', 'WN18RR'],
+    parser.add_argument('--dataset', type=str, default='lawdata',
+                        choices=['FB15K-237', 'WN18RR', 'lawdata'],
                         help='Dataset')
     parser.add_argument('--mode', type=str, default='train',
                         choices=['train', 'test'],
@@ -98,5 +98,25 @@ def main():
     # tbwriter = SummaryWriter(logdir=args.tb_dir)
 
 
+def record_pid():
+    # 获取进程的pid
+    import os, sys, datetime
+    pid = os.getpid()
+    # print('* pid: ', pid)
+    #
+    process_name = f"{sys.argv[0]} {' '.join(sys.argv[1:])}"
+    data_str = str(datetime.datetime.now())
+    log_str = f"{data_str} {process_name} * PID: {pid}\n"
+    print(log_str)
+    with open('./pids.txt', 'a', encoding='UTF-8') as f:
+        f.write(log_str)
+
+
 if __name__ == '__main__':
+    """
+    example:
+        nohup python3 manage.py --model GCAKE --mode train --dataset FB15K-237 --use_graph  &>GCAKE_FB.out&
+        python3 manage.py --model GCAKE --mode train --dataset WN18RR --use_graph
+    """
+    record_pid()
     main()

@@ -5,7 +5,7 @@ from config import Config
 from .modules import Graph
 
 
-class TriplesEncoder(nn.Module):
+class TriplesAttention(nn.Module):
     def __init__(self, d_model, nhead, dim_feedforward, num_layers, dropout=0.1, activation="relu"):
         super().__init__()
         decoder_layer = nn.TransformerDecoderLayer(
@@ -17,6 +17,20 @@ class TriplesEncoder(nn.Module):
     def forward(self, triples_embedding, sents_encoded):
         triples_feature = self.encoder(triples_embedding, sents_encoded)
         return triples_feature
+
+
+class TriplesEncoder(nn.Module):
+    def __init__(self, d_model, nhead, dim_feedforward, num_layers, dropout=0.1, activation="relu"):
+        super(TriplesEncoder, self).__init__()
+        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dim_feedforward=dim_feedforward,
+                                                   dropout=dropout, activation=activation)
+        encoder_norm = nn.LayerNorm(d_model)
+        self.encoder = nn.TransformerEncoder(
+            encoder_layer=encoder_layer, num_layers=num_layers, norm=encoder_norm)
+
+    def forward(self, triples_embed):
+        sents_feature = self.encoder(triples_embed)
+        return sents_feature
 
 
 class TransformerSentenceEncoder(nn.Module):
@@ -86,14 +100,6 @@ class GraphAttention(nn.Module):
             si_context_emb = rel_ids_emb
         return si_emb, si_context_emb
 
-    def get_node(self, node_id):
-        node_id = int(node_id)
-        if node_id in self.graph.entities:
-            node = self.graph.entities[node_id]
-        else:
-            node = self.graph.relations[node_id]
-        return node
-
     def attention(self, node_emed, neighbours_embed):
         att = torch.mm(neighbours_embed, torch.transpose(node_emed, 0, 1))
         attention_out = torch.mm(torch.transpose(att / 15, 0, 1), neighbours_embed)
@@ -104,7 +110,7 @@ class GraphAttention(nn.Module):
         for h, r, t in hrts:
             triple_att = []
             for node_id in [h, r, t]:
-                node = self.get_node(node_id)
+                node = self.graph.get_node(node_id)
                 neighbour_nodes = self.graph.get_context(node, path_len=5)
                 node_embed, neighbours_embed = self.get_embedding(node, neighbour_nodes)
                 attention_out = self.attention(node_embed, neighbours_embed)

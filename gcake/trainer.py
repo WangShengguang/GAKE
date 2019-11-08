@@ -10,7 +10,7 @@ from tqdm import trange, tqdm
 from config import Config, ckpt_dir
 from gcake.data_helper import DataHelper
 from gcake.evaluator import Evaluator
-from gcake.models.modules import Graph
+from gcake.model.modules import Graph
 
 
 class Saver(object):
@@ -135,7 +135,9 @@ class Trainer(BaseTrainer):
             print("* Model load from file: {}".format(model_path))
         else:
             global_step = 0
-        per_epoch_step = len(self.data_helper.get_data("train")[0]) // Config.batch_size // 2  # 正负样本
+        #
+        train_count = len(self.data_helper.get_data("train")[0])
+        per_epoch_step = train_count // (Config.batch_size // 2)  # 正负样本
         start_epoch_num = global_step // per_epoch_step  # 已经训练过多少epoch
         print("start_epoch_num: {}".format(start_epoch_num))
 
@@ -144,9 +146,8 @@ class Trainer(BaseTrainer):
             if epoch_num <= start_epoch_num:
                 continue
             losses = []
-            for triples, sentences, y_labels in self.data_helper.batch_iter(data_type="train",
-                                                                            batch_size=Config.batch_size,
-                                                                            _shuffle=True):
+            for triples, sentences, y_labels in self.data_helper.batch_iter(
+                    data_type="train", batch_size=Config.batch_size, _shuffle=True):
                 pred, loss = model(triples, sentences, y_labels)
                 # if global_step % Config.check_step == 0: # train step metrics
                 #     self.evaluator.set_model(sess, model)
@@ -159,23 +160,22 @@ class Trainer(BaseTrainer):
                 #         self.data_set, self.model_name, epoch_num, global_step, loss,
                 #         mr, mrr, hit_10, hit_3, hit_1))
                 # logging.info(" step:{}, loss: {:.3f}".format(global_step, loss))
-                # predict = sess.run(model.predict, feed_dict={model.input_x: x_batch, model.input_y: y_batch})
                 losses.append(loss.item())
                 self.backward(loss, model)
                 global_step += 1
-                logging.info(f"epoch:{epoch_num}({per_epoch_step}), global_step: {global_step}, "
-                             f"loss:{loss.item():.4f}")
+                log_str = (f"epoch: {epoch_num}({per_epoch_step}), global_step: {global_step}, "
+                           f"loss:{loss.item():.4f}")
+                # print(log_str)
+                logging.info(log_str)
             self.check_loss_save(model, global_step, loss)
             # if epoch_num > self.min_num_epoch:
-            mr, mrr, hit_10, hit_3, hit_1 = self.check_save_mrr(
-                model, global_step)
+            mr, mrr, hit_10, hit_3, hit_1 = self.check_save_mrr(model, global_step)
             logging.info("valid epoch_num: {}, global_step: {}, loss: {:.3f}, "
                          "mr: {:.3f}, mrr: {:.3f}, hit_10: {:.3f}, hit_3: {:.3f}, hit_1: {:.3f}".format(
                 epoch_num, global_step, np.mean(losses),
                 mr, mrr, hit_10, hit_3, hit_1))
             self.saver.save(model, global_step, mode="max_step")
-            logging.info(
-                "epoch {} end  ...\n------------------------------\n\n".format(epoch_num))
+            logging.info("epoch {} end  ...\n------------------------------\n\n".format(epoch_num))
             # Early stopping and logging best f1
             if self.patience_counter >= Config.patience_num and epoch_num > self.min_num_epoch:
                 logging.info("Best val f1: {:.3f} best loss:{:.3f}".format(
@@ -190,43 +190,41 @@ class GraphTrainer(Trainer):
         super().__init__(model, args, configs)
         self.dataset = args.dataset
         self.model = model
-        from gcake.models.modules import Graph
+        from gcake.model.modules import Graph
         all_triples, sentences = self.data_helper.get_all_datas()
         self.graph = Graph(all_triples)
+        self.best_threshold = self.max_correct_count = 0
 
-    def find_best_threshold(self, model, valid_triples, device=Config.device):
+    def find_best_threshold(self, model, per_valid_epoch_step):
         model.eval()
-        all_preds = []
-        for i, (h, r, t) in enumerate(tqdm(valid_triples, desc="valid best threshold ")):
-            for entity_id in (h, t):
-                # data
-                _neighbor_nodes = self.graph.get_neighbor_context(entity_id)
-                _path_nodes = self.graph.get_path_context(entity_id)
-                _edge_nodes = self.graph.get_edge_context(entity_id)
-                #
-                pred, loss = model(self.graph.entities[entity_id], _neighbor_nodes, _path_nodes, _edge_nodes)
-                all_preds.append(pred.item())
-                if i % 1000 == 0:
-                    logging.info(f"* valid step: {i}/{len(valid_triples)},\t"
-                                 f"entity:{entity_id},pred:{pred.item():.4f}, loss:{loss.item():.4f}")
-                    print(f"* valid step: {i}/{len(valid_triples)},\t"
-                          f"entity:{entity_id}, pred:{pred.item():.4f}, loss: {loss.item():.4f}, "
-                          f"min/max={min(all_preds):.4f}/{max(all_preds):.4f}")
-                    if device == 'gpu':
-                        torch.cuda.empty_cache()
-        all_preds = np.asarray(all_preds)
-        best_threshold = max_correct_count = 0
+        all_preds, all_labels = [], []
+        step = 0
+        for triples, sentences, y_labels in tqdm(self.data_helper.batch_iter(
+                data_type="valid", batch_size=Config.batch_size, _shuffle=True),
+                total=per_valid_epoch_step, desc='GAKE valid'):
+            step += 1
+            pred, loss = model(triples, y_labels)
+            all_preds.extend(list(pred))
+            all_labels.extend(list(y_labels))
+            if step % 1000 == 0:
+                # pred: {all_preds[-1]},
+                logging.info(f"* valid step: {step}/{per_valid_epoch_step},\t"
+                             f"loss:{loss.item():.4f} min/max={min(all_preds):.4f}/{max(all_preds):.4f}")
+        all_labels = np.asarray(all_labels)
         min_value, max_value = min(all_preds), max(all_preds)
         logging.info(f"min_value: {min_value:.4f}, max_value: {max_value:.4f}")
         print(f"min_value: {min_value:.4f}, max_value: {max_value:.4f}")
         if min_value < max_value:
             for threshold in tqdm(np.arange(min_value, max_value, (max_value - min_value) / 10),
                                   desc="threshold interval"):
-                _correct_count = len(valid_triples) - sum(all_preds > threshold)
-                if _correct_count > max_correct_count:
-                    max_correct_count = _correct_count
-                    best_threshold = threshold
-        return max_correct_count, best_threshold
+                _all_preds = np.asarray(all_preds)
+                _all_preds[np.where(_all_preds < threshold)] = -1
+                _all_preds[np.where(_all_preds >= threshold)] = 1
+                _correct_count = sum(_all_preds == all_labels)
+                if _correct_count > self.max_correct_count:
+                    self.max_correct_count = _correct_count
+                    self.best_threshold = threshold
+        return self.max_correct_count, self.best_threshold
 
     def run(self, mode, device=Config.device):
 
@@ -239,40 +237,41 @@ class GraphTrainer(Trainer):
             print(_test_log)
             return
 
-        triples, sentences = self.data_helper.get_all_datas()
-        graph = Graph(triples=triples)
         max_correct_count = 0
         valid_triples, sentences = self.data_helper.get_data('valid')
+        valid_sample_count = len(valid_triples)
         # count, threshold = self.find_best_threshold(self.model, valid_triples)
-        train_points_cnt = len(graph.entities)
         model_path, saved_epoch, saved_step = self.saver.load_model(self.model, mode='max_step', fail_ok=True)
-        print(f"* load model from : {model_path}, epoch: {saved_epoch}, step:{saved_step}")
-        step = 0
-        entity_ids = sorted(graph.entities)
+        if saved_step > 0:
+            logging.info(f"* load model from : {model_path}, epoch: {saved_epoch}, step:{saved_step}")
+        #
+        sample_count = len(self.data_helper.get_data("train")[0])
+        per_epoch_step = sample_count // (Config.batch_size // 2)  # 正负样本
+        start_epoch_num = saved_step // per_epoch_step  # 已经训练过多少epoch
+        logging.info("start_epoch_num: {}".format(start_epoch_num))
+        per_valid_epoch_step = len(self.data_helper.get_data("valid")[0]) // Config.batch_size // 2  # 正负样本
+        #
+        step = saved_step
         for epoch in trange(5, desc="GAKE train epoch "):
+            if epoch < start_epoch_num:
+                continue
             self.model.train()
-            for entity_id in tqdm(entity_ids, desc='GAKE train'):
+            for triples, sentences, y_labels in tqdm(self.data_helper.batch_iter(
+                    data_type="train", batch_size=Config.batch_size, _shuffle=True),
+                    total=per_epoch_step, desc='GAKE train'):
                 step += 1
-                if step < saved_step or epoch < saved_epoch:
+                if step < saved_step:
                     continue
-                node = graph.entities[entity_id]
-                # data
-                _neighbor_nodes = graph.get_neighbor_context(entity_id)
-                _path_nodes = graph.get_path_context(entity_id)
-                _edge_nodes = graph.get_edge_context(entity_id)
                 #
-                pred, loss = self.model(node, _neighbor_nodes, _path_nodes, _edge_nodes)
-
+                pred, loss = self.model(triples, y_labels)
                 self.backward(loss, self.model)
                 if step % 100 == 0:
-                    print(f"*train step: {step}/{train_points_cnt},  "
-                          f"entity:{entity_id},\tloss:{loss.item():.4f}")
+                    logging.info(f"* epoch: {epoch}, train step: {step}/{sample_count}, \tloss:{loss.item():.4f}")
             self.saver.save(self.model, epoch=epoch, step=step, mode="max_step")
-            if device == 'gpu':
-                torch.cuda.empty_cache()
-            count, threshold = self.find_best_threshold(self.model, valid_triples)
-            print(f'\n* epoch: {epoch}, count: {count}/{len(valid_triples)}, threshold: {threshold:.4f}')
+            count, threshold = self.find_best_threshold(self.model, per_valid_epoch_step)
+            logging.info(
+                f'\n* epoch: {epoch}, correct_count: {count}/{valid_sample_count * 2}, threshold: {threshold:.4f}')
             if count > max_correct_count:
                 max_correct_count = count
                 self.saver.save(self.model, epoch=epoch, step=step, mode="max_acc",
-                                dic={'count': f'{count}/{len(valid_triples)}', 'best_threshold': threshold})
+                                dic={'count': f'{count}/{valid_sample_count * 2}', 'best_threshold': threshold})
